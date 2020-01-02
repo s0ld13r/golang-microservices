@@ -1,18 +1,19 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/s0ld13r/golang-microservices/introduction/mvc/utils"
+	"github.com/gin-gonic/gin"
 
-	"github.com/s0ld13r/golang-microservices/introduction/mvc/services"
+	"github.com/s0ld13r/golang-microservices/mvc/utils"
+
+	"github.com/s0ld13r/golang-microservices/mvc/services"
 )
 
-func GetUser(resp http.ResponseWriter, req *http.Request) {
-	userIdParam := req.URL.Query().Get("user_id")
+func GetUser(c *gin.Context) {
+	userIdParam := c.Param("user_id")
 	userId, err := strconv.ParseUint(userIdParam, 10, 64)
 	if err != nil {
 		apiError := &utils.ApplicationError{
@@ -20,19 +21,14 @@ func GetUser(resp http.ResponseWriter, req *http.Request) {
 			StatusCode: http.StatusBadRequest,
 			Code:       "bad_requet",
 		}
-		jsonValue, _ := json.Marshal(apiError)
-		resp.WriteHeader(apiError.StatusCode)
-		resp.Write(jsonValue)
+		utils.RespondError(c, apiError)
 		return
 	}
 	log.Printf("about to process user_id %d", userId)
-	if user, apiErr := services.GetUser(userId); apiErr != nil {
-		resp.WriteHeader(apiErr.StatusCode)
-		jsonValue, _ := json.Marshal(apiErr)
-		resp.Write([]byte(jsonValue))
+	if user, apiErr := services.UsersService.GetUser(userId); apiErr != nil {
+		utils.RespondError(c, apiErr)
 	} else {
-		jsonValue, _ := json.Marshal(user)
-		resp.Write(jsonValue)
+		utils.Resspond(c, http.StatusOK, user)
 	}
 
 }
